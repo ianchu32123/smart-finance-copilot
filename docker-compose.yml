@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL 資料庫服務
+  db:
+    image: postgres:15-alpine  # 面試亮點：使用 Alpine 版本，Image 體積更小
+    container_name: smart_finance_db
+    restart: always  # 確保容器崩潰或重開機時自動重啟
+    environment:
+      POSTGRES_USER: finance_admin
+      POSTGRES_PASSWORD: secure_password_123
+      POSTGRES_DB: smart_finance
+    ports:
+      - "5432:5432"  # 將容器內的 5432 port 映射到本機的 5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # 資料持久化
+    networks:
+      - finance_network
+
+  # 2. pgAdmin 視覺化管理工具 (輔助開發用)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: smart_finance_pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+    ports:
+      - "5050:80"  # 本機打開 localhost:5050 即可使用介面
+    depends_on:
+      - db         # 確保資料庫先啟動後，pgAdmin 才啟動
+    networks:
+      - finance_network
+
+# 定義 Volume (資料卷)
+volumes:
+  postgres_data:
+    # 這裡交由 Docker 自動管理本機的儲存位置
+
+# 定義 Network (內部網路)
+networks:
+  finance_network:
+    driver: bridge # 讓同一個網路下的容器可以用 container_name 互相溝通

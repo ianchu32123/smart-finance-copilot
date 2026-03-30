@@ -1,0 +1,24 @@
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
+
+# 這是連線到你 Docker PostgreSQL 的字串
+# 格式：postgresql://帳號:密碼@主機:Port/資料庫名稱
+SQLALCHEMY_DATABASE_URL = "postgresql+psycopg://finance_admin:secure_password_123@localhost:5432/smart_finance"
+
+# 建立資料庫引擎
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
+
+# 建立 SessionLocal 類別，用來在 API 中產生資料庫的 Session (對話)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# 建立 Base 類別，我們的 Models 都會繼承它
+Base = declarative_base()
+
+# 取得資料庫連線的 Dependency (供 FastAPI 路由使用)
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

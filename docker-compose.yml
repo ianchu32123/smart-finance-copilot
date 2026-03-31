@@ -1,43 +1,61 @@
 version: '3.8'
 
 services:
-  # 1. PostgreSQL 資料庫服務
+  # 1. 資料庫服務 (保持原樣)
   db:
-    image: postgres:15-alpine  # 面試亮點：使用 Alpine 版本，Image 體積更小
+    image: postgres:15-alpine
     container_name: smart_finance_db
-    restart: always  # 確保容器崩潰或重開機時自動重啟
     environment:
-      POSTGRES_USER: finance_admin
-      POSTGRES_PASSWORD: secure_password_123
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
       POSTGRES_DB: smart_finance
     ports:
-      - "5432:5432"  # 將容器內的 5432 port 映射到本機的 5432
+      - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data  # 資料持久化
-    networks:
-      - finance_network
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
 
-  # 2. pgAdmin 視覺化管理工具 (輔助開發用)
+  # 2. 資料庫管理工具 (保持原樣)
   pgadmin:
     image: dpage/pgadmin4
     container_name: smart_finance_pgadmin
-    restart: always
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin_password
     ports:
-      - "5050:80"  # 本機打開 localhost:5050 即可使用介面
+      - "5050:80"
     depends_on:
-      - db         # 確保資料庫先啟動後，pgAdmin 才啟動
-    networks:
-      - finance_network
+      - db
+    restart: unless-stopped
 
-# 定義 Volume (資料卷)
+  # 🌟 3. 新增：前端 React (Nginx) 服務
+  frontend:
+    build: 
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: smart_finance_frontend
+    ports:
+      - "3000:80" # 將你本機的 3000 port 對應到容器內 Nginx 的 80 port
+    restart: unless-stopped
+    depends_on:
+      - db
+  
+  # 🌟 新增：FastAPI 後端服務
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smart_finance_backend
+    env_file:
+      - .env
+    environment:
+      # 告訴後端，資料庫的主機名稱現在叫做 "db"
+      - DATABASE_URL=postgresql+psycopg://root:rootpassword@db:5432/smart_finance
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    restart: unless-stopped
+
 volumes:
-  postgres_data:
-    # 這裡交由 Docker 自動管理本機的儲存位置
-
-# 定義 Network (內部網路)
-networks:
-  finance_network:
-    driver: bridge # 讓同一個網路下的容器可以用 container_name 互相溝通
+  pgdata:

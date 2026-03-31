@@ -120,3 +120,15 @@ def create_transaction_via_ai(payload: schemas.TransactionAIText, db: Session = 
         "parsed_data": parsed_data,
         "transaction_id": new_tx.id
     }
+
+# 面試亮點：RESTful GET 方法與 SQLAlchemy 查詢
+@app.get("/api/transactions/{user_id}", response_model=list[schemas.TransactionResponse])
+def get_user_transactions(user_id: str, db: Session = Depends(get_db)):
+    # 透過 filter 撈出該 user_id 底下的所有交易紀錄，並依照日期由新到舊排序
+    transactions = db.query(models.Transaction)\
+                     .filter(models.Transaction.user_id == user_id)\
+                     .order_by(models.Transaction.transaction_date.desc())\
+                     .all()
+    
+    # 如果找不到資料，回傳空陣列是比較好的前端工程實踐，而不是報錯
+    return transactions

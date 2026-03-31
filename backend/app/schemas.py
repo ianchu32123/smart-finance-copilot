@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime,date
 
 # 前端傳送過來的資料格式 (註冊時)
 class UserCreate(BaseModel):
@@ -29,6 +29,7 @@ class TransactionResponse(BaseModel):
     amount: float
     description: str | None = None
     is_ai_parsed: bool
+    transaction_date: date
 
     class Config:
         from_attributes = True

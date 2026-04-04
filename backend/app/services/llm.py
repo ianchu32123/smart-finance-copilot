@@ -1,26 +1,54 @@
 import os
 import json
-from openai import OpenAI
-from dotenv import load_dotenv
+import google.generativeai as genai
 
-# 載入 .env 檔案裡的環境變數
-load_dotenv()
-
-# 初始化 OpenAI 客戶端 (會自動讀取 os.environ.get("OPENAI_API_KEY"))
-client = OpenAI()
-
-def parse_transaction_with_llm(user_input: str) -> dict:
+def parse_transaction_with_llm(text: str) -> dict:
     """
-    (Mock 模式) 暫時不呼叫 OpenAI，直接回傳假資料來測試資料庫邏輯。
-    面試時可以說：「為了不依賴外部服務並節省開發成本，我實作了 Mock 機制來做單元測試。」
+    將使用者輸入的自然語言，交由 Gemini 解析成結構化的 JSON 資料
     """
-    print(f"✅ 成功收到前端傳來的文字: {user_input}")
-    print("🤖 (假裝思考中...) 正在解析為 JSON...")
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("未設定 GEMINI_API_KEY 環境變數！")
     
-    # 直接回傳一組固定的完美資料
-    return {
-        "amount": 1200,
-        "description": "海底撈",
-        "category": "飲食",
-        "type": "expense"
-    }
+    genai.configure(api_key=api_key)
+    
+    # 💡 升級：自動向 Google 查詢目前可用的模型清單
+    available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
+    print(f"🔍 後端偵測到的可用模型: {available_models}") # 印在 Docker log 方便除錯
+    
+    # 自動挑選名稱中帶有 'flash' 的模型，如果都沒找到，就用最保守的 'gemini-1.5-flash-latest'
+    target_model_name = 'gemini-1.5-flash-latest'
+    for m in available_models:
+        if 'flash' in m:
+            # list_models 回傳的名稱通常帶有 'models/' 前綴，GenerativeModel 不需要這個前綴
+            target_model_name = m.replace('models/', '') 
+            break
+            
+    print(f"🤖 最終決定喚醒的 AI 模型: {target_model_name}")
+    model = genai.GenerativeModel(target_model_name)
+    
+    prompt = f"""
+    你是一個專業的理財助手。請從以下使用者輸入的文字中，提取出「花費金額」與「消費項目」。
+    請務必嚴格遵守以下規則：
+    1. 只能回傳乾淨的 JSON 格式，絕對不要包含任何 Markdown 標記 (例如 ```json) 或其他說明文字。
+    2. JSON 必須包含兩個欄位：
+       - "amount": 整數 (例如: 150)
+       - "description": 字串，盡量精簡 (例如: "大潤發日常用品")
+    
+    使用者輸入：{text}
+    """
+    
+    try:
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.GenerationConfig(
+                response_mime_type="application/json",
+                temperature=0.1 
+            )
+        )
+        result = json.loads(response.text)
+        return result
+        
+    except Exception as e:
+        print(f"🔥 LLM 解析失敗: {e}")
+        return {"amount": 0, "description": "無法解析的記帳內容"}

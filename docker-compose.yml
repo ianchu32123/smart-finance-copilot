@@ -50,6 +50,7 @@ services:
       - .env
     environment:
       # 告訴後端，資料庫的主機名稱現在叫做 "db"
+      - GEMINI_API_KEY={GEMINI_API_KEY} #
       - DATABASE_URL=postgresql+psycopg://root:rootpassword@db:5432/smart_finance
     ports:
       - "8000:8000"

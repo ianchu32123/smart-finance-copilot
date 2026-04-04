@@ -16,7 +16,21 @@ from app import models
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
+# ... 上面的程式碼保持不變 ...
+
 config = context.config
+
+# 📍 從這裡開始新增：讓 Alembic 動態去抓取環境變數
+import os
+# 如果 Docker 有提供 DATABASE_URL 就用 Docker 的，否則就用本機的 localhost
+database_url = os.getenv(
+    "DATABASE_URL", 
+    "postgresql+psycopg://root:rootpassword@localhost/smart_finance"
+)
+config.set_main_option("sqlalchemy.url", database_url)
+# 📍 新增到這裡結束
+
+# ... 下面的程式碼保持不變 ...
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

@@ -1,59 +1,27 @@
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchTransactions, addTransactionViaAI } from '../store/transactionSlice';
-import { Send } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-
-// 定義圓餅圖的顏色票（清爽的現代色系）
-const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+import { Send, LogOut } from 'lucide-react';
+import { useDashboard } from '../hooks/useDashboard'; // 📍 引入我們寫好的大腦
+import { TrendLineChart, ExpensePieChart } from '../components/DashboardCharts'; // 📍 引入圖表元件
 
 export default function Dashboard() {
-  const dispatch = useDispatch();
-  const { data: transactions, status } = useSelector((state) => state.transactions);
-  
-  const [inputText, setInputText] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const USER_ID = "7d9db4a4-ba9a-490c-8f0c-0ebf875d445e"; // ⚠️ 記得換回你的 UUID！
-
-  useEffect(() => {
-    if (status === 'idle') {
-      dispatch(fetchTransactions(USER_ID));
-    }
-  }, [status, dispatch]);
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!inputText.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      await dispatch(addTransactionViaAI({ user_id: USER_ID, text: inputText })).unwrap();
-      setInputText('');
-    } catch (error) {
-      console.error("AI 記帳失敗", error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const totalAmount = transactions.reduce((sum, tx) => sum + tx.amount, 0);
-
-  // 📊 資料處理：將交易紀錄依照「項目 (description)」進行分組加總，餵給圓餅圖
-  const chartData = Object.values(
-    transactions.reduce((acc, tx) => {
-      const name = tx.description || '其他';
-      if (!acc[name]) {
-        acc[name] = { name, value: 0 };
-      }
-      acc[name].value += tx.amount;
-      return acc;
-    }, {})
-  ).sort((a, b) => b.value - a.value); // 依金額由大到小排序
+  // 🌟 從 Custom Hook 中解構出所有需要的變數與方法
+  const {
+    isGuest, transactions, status, inputText, setInputText,
+    isSubmitting, handleSubmit, handleLogout,
+    totalAmount, pieChartData, lineChartData
+  } = useDashboard();
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      <h1 className="text-3xl font-bold text-slate-800 mb-8">財務儀表板</h1>
+    <div className="max-w-7xl mx-auto p-6 relative">
+      {/* 頂部導航列 */}
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-slate-800">財務儀表板</h1>
+        <div className="flex items-center gap-4">
+          {isGuest && <span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-bold">訪客模式</span>}
+          <button onClick={handleLogout} className="flex items-center gap-2 text-slate-500 hover:text-red-500 transition-colors">
+            <LogOut size={20} /> 登出
+          </button>
+        </div>
+      </div>
 
       {/* AI 智能記帳輸入區塊 */}
       <form onSubmit={handleSubmit} className="mb-8 relative max-w-3xl">
@@ -86,38 +54,21 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 🌟 版面升級：左右雙欄設計 */}
+      {/* 中欄：每日花費趨勢折線圖 */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 mb-8">
+        <h2 className="text-xl font-semibold text-slate-800 mb-6">每日花費趨勢</h2>
+        <div className="h-[300px] w-full">
+          <TrendLineChart data={lineChartData} />
+        </div>
+      </div>
+
+      {/* 左右雙欄設計：圓餅圖與交易紀錄 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        
-        {/* 左欄：花費比例圓餅圖 */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 h-[400px] flex flex-col">
           <h2 className="text-xl font-semibold text-slate-800 mb-4">花費比例分析</h2>
-          {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={80}
-                  outerRadius={120}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value) => `$ ${value}`} />
-                <Legend verticalAlign="bottom" height={36}/>
-              </PieChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-slate-400">尚未有足夠的資料繪製圖表</div>
-          )}
+          <ExpensePieChart data={pieChartData} />
         </div>
 
-        {/* 右欄：交易紀錄列表區塊 (加上捲動軸限制高度) */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 h-[400px] flex flex-col">
           <h2 className="text-xl font-semibold text-slate-800 mb-4">最近交易紀錄</h2>
           <div className="overflow-y-auto pr-2 flex-1">
@@ -136,12 +87,20 @@ export default function Dashboard() {
                       <span className="text-sm text-slate-400">{tx.transaction_date}</span>
                     </div>
                     <div className="flex items-center gap-3">
-                      {tx.is_ai_parsed && (
-                        <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">
-                          AI
+                      {tx.is_ai_parsed && <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">AI</span>}
+                      <span className="font-bold text-slate-700 text-lg">$ {tx.amount}</span>
+                      <div className="flex items-center gap-3">
+                      {/* 📍 新增：如果是異常花費，顯示紅色閃爍警告標籤 */}
+                      {tx.is_anomaly && (
+                        <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold animate-pulse shadow-sm">
+                          🚨 異常大筆花費
                         </span>
                       )}
+                      
+                      {/* 原本的 AI 標籤與金額 */}
+                      {tx.is_ai_parsed && <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">AI</span>}
                       <span className="font-bold text-slate-700 text-lg">$ {tx.amount}</span>
+                    </div>
                     </div>
                   </div>
                 ))}
@@ -149,7 +108,6 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

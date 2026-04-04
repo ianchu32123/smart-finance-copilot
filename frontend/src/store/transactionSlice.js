@@ -34,7 +34,15 @@ const transactionSlice = createSlice({
     data: [],
     status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
   },
-  reducers: {},
+  reducers: {// 📍 新增：訪客專用，直接把資料推進前端狀態
+    addLocalTransaction: (state, action) => {
+      state.data.unshift(action.payload); // 加到列表最前面
+    },
+    // 📍 新增：登出時用來清空畫面的資料
+    clearTransactions: (state) => {
+      state.data = [];
+      state.status = 'idle';
+    }},
   extraReducers: (builder) => {
     builder
       .addCase(fetchTransactions.pending, (state) => {
@@ -49,5 +57,5 @@ const transactionSlice = createSlice({
       });
   },
 });
-
+export const { addLocalTransaction, clearTransactions } = transactionSlice.actions;
 export default transactionSlice.reducer;

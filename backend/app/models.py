@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import Column, Integer, String, Numeric, Boolean, Date, DateTime, ForeignKey, Text, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from sqlalchemy import Boolean
 
 from sqlalchemy.orm import relationship
 from app.database import Base  # 📍 加上這行，讓它使用 database.py 裡面的 Base
@@ -15,7 +16,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-
+    hashed_password = Column(String, nullable=False, server_default="default_hash")
     # 建立與 Transaction 的關聯 (一對多)
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     anomalies = relationship("Anomaly", back_populates="user", cascade="all, delete-orphan")
@@ -37,7 +38,7 @@ class Transaction(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
-    
+    is_anomaly = Column(Boolean, default=False)
     # 面試亮點：使用 Numeric(10, 2) 確保財務數據的精度，避免 Float 的浮點數誤差
     amount = Column(Numeric(10, 2), nullable=False)
     transaction_date = Column(Date, nullable=False)

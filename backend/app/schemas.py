@@ -30,6 +30,22 @@ class TransactionResponse(BaseModel):
     description: str | None = None
     is_ai_parsed: bool
     transaction_date: date
+    is_anomaly: bool = False
 
     class Config:
         from_attributes = True
+
+# 📍 請在檔案找個合適的地方貼上這些類別
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    user_id: str

@@ -1,13 +1,14 @@
-import { Send, LogOut } from 'lucide-react';
-import { useDashboard } from '../hooks/useDashboard'; // 📍 引入我們寫好的大腦
-import { TrendLineChart, ExpensePieChart } from '../components/DashboardCharts'; // 📍 引入圖表元件
+import { Send, LogOut, Trash2 } from 'lucide-react'; // 📍 確保引入了垃圾桶圖示
+import { useDashboard } from '../hooks/useDashboard';
+import { TrendLineChart, ExpensePieChart } from '../components/DashboardCharts';
 
 export default function Dashboard() {
-  // 🌟 從 Custom Hook 中解構出所有需要的變數與方法
+  // 🌟 關鍵修復：確保把所有算好的財務變數都拿出來！
   const {
     isGuest, transactions, status, inputText, setInputText,
     isSubmitting, handleSubmit, handleLogout,
-    totalAmount, pieChartData, lineChartData
+    totalIncome, totalExpense, balance, handleDelete, // 📍 就是這裡原本漏掉了 balance
+    pieChartData, lineChartData
   } = useDashboard();
 
   return (
@@ -29,7 +30,7 @@ export default function Dashboard() {
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="告訴 AI 你今天花了什麼？ (例如：去大潤發買日常用品花了 850)"
+          placeholder="告訴 AI 你今天花了什麼？或賺了多少？ (例如：接案賺了 5000)"
           className="w-full pl-6 pr-16 py-4 rounded-full border-2 border-slate-200 shadow-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-100 outline-none transition-all text-lg"
           disabled={isSubmitting}
         />
@@ -42,15 +43,19 @@ export default function Dashboard() {
         </button>
       </form>
       
-      {/* 頂部數據卡片 */}
+      {/* 🌟 全新升級：三合一收支數據卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <h3 className="text-slate-500 text-sm font-medium">總花費</h3>
-          <p className="text-3xl font-bold text-slate-800 mt-2">$ {totalAmount.toLocaleString()}</p>
+        <div className="bg-slate-800 p-6 rounded-xl shadow-md border border-slate-700">
+          <h3 className="text-slate-400 text-sm font-medium">總結餘</h3>
+          <p className="text-3xl font-bold text-white mt-2">$ {balance.toLocaleString()}</p>
         </div>
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
-          <h3 className="text-slate-500 text-sm font-medium">記帳筆數</h3>
-          <p className="text-3xl font-bold text-slate-800 mt-2">{transactions.length} 筆</p>
+          <h3 className="text-slate-500 text-sm font-medium">總收入</h3>
+          <p className="text-3xl font-bold text-emerald-600 mt-2">+ $ {totalIncome.toLocaleString()}</p>
+        </div>
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
+          <h3 className="text-slate-500 text-sm font-medium">總支出</h3>
+          <p className="text-3xl font-bold text-rose-600 mt-2">- $ {totalExpense.toLocaleString()}</p>
         </div>
       </div>
 
@@ -64,11 +69,14 @@ export default function Dashboard() {
 
       {/* 左右雙欄設計：圓餅圖與交易紀錄 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* 左欄：花費比例圓餅圖 */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 h-[400px] flex flex-col">
           <h2 className="text-xl font-semibold text-slate-800 mb-4">花費比例分析</h2>
           <ExpensePieChart data={pieChartData} />
         </div>
 
+        {/* 右欄：最近交易紀錄 */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-100 p-6 h-[400px] flex flex-col">
           <h2 className="text-xl font-semibold text-slate-800 mb-4">最近交易紀錄</h2>
           <div className="overflow-y-auto pr-2 flex-1">
@@ -81,27 +89,34 @@ export default function Dashboard() {
             ) : (
               <div className="divide-y divide-slate-100">
                 {transactions.map((tx) => (
-                  <div key={tx.id} className="py-4 flex justify-between items-center hover:bg-slate-50 px-2 rounded-lg">
+                  <div key={tx.id} className="py-4 flex justify-between items-center hover:bg-slate-50 px-2 rounded-lg group">
+                    
+                    {/* 項目與日期 */}
                     <div className="flex flex-col">
                       <span className="font-semibold text-slate-800">{tx.description}</span>
                       <span className="text-sm text-slate-400">{tx.transaction_date}</span>
                     </div>
+                    
+                    {/* 標籤、金額與刪除按鈕 */}
                     <div className="flex items-center gap-3">
+                      {tx.is_anomaly && <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold animate-pulse shadow-sm whitespace-nowrap">🚨 異常大筆花費</span>}
                       {tx.is_ai_parsed && <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">AI</span>}
-                      <span className="font-bold text-slate-700 text-lg">$ {tx.amount}</span>
-                      <div className="flex items-center gap-3">
-                      {/* 📍 新增：如果是異常花費，顯示紅色閃爍警告標籤 */}
-                      {tx.is_anomaly && (
-                        <span className="bg-red-100 text-red-700 text-xs px-2 py-1 rounded-full font-bold animate-pulse shadow-sm">
-                          🚨 異常大筆花費
-                        </span>
-                      )}
                       
-                      {/* 原本的 AI 標籤與金額 */}
-                      {tx.is_ai_parsed && <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-medium">AI</span>}
-                      <span className="font-bold text-slate-700 text-lg">$ {tx.amount}</span>
+                      {/* 💰 金額：判斷是收入還支出，顯示不同顏色 */}
+                      <span className={`font-bold text-lg min-w-[80px] text-right ${tx.transaction_type === 'income' ? 'text-emerald-600' : 'text-slate-700'}`}>
+                        {tx.transaction_type === 'income' ? '+' : '-'} $ {tx.amount.toLocaleString()}
+                      </span>
+                      
+                      {/* 🗑️ 刪除按鈕：平常隱藏，滑鼠移過去 (group-hover) 才顯示 */}
+                      <button 
+                        onClick={() => handleDelete(tx.id)}
+                        className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        title="刪除紀錄"
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
-                    </div>
+
                   </div>
                 ))}
               </div>

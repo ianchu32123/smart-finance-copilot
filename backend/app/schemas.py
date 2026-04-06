@@ -31,6 +31,7 @@ class TransactionResponse(BaseModel):
     is_ai_parsed: bool
     transaction_date: date
     is_anomaly: bool = False
+    transaction_type: str = "expense"
 
     class Config:
         from_attributes = True

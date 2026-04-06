@@ -46,6 +46,7 @@ class Transaction(Base):
     raw_text_input = Column(Text)
     is_ai_parsed = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    transaction_type = Column(String, nullable=False, server_default="expense")
 
     # 建立關聯
     user = relationship("User", back_populates="transactions")

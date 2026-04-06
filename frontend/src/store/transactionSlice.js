@@ -10,6 +10,14 @@ export const fetchTransactions = createAsyncThunk(
   }
 );
 
+export const deleteTransaction = createAsyncThunk(
+  'transactions/delete',
+  async (transactionId) => {
+    await axios.delete(`http://127.0.0.1:8000/api/transactions/${transactionId}`);
+    return transactionId; // 回傳 ID 讓 reducer 知道要刪掉哪筆
+  }
+);
+
 // ... 原本的 fetchTransactions 保持不動 ...
 
 // 新增：處理 AI 記帳的 POST 請求
@@ -38,6 +46,9 @@ const transactionSlice = createSlice({
     addLocalTransaction: (state, action) => {
       state.data.unshift(action.payload); // 加到列表最前面
     },
+    removeLocalTransaction: (state, action) => { 
+    state.data = state.data.filter(tx => tx.id !== action.payload); // 📍 新增這行
+  },
     // 📍 新增：登出時用來清空畫面的資料
     clearTransactions: (state) => {
       state.data = [];
@@ -54,8 +65,11 @@ const transactionSlice = createSlice({
       })
       .addCase(fetchTransactions.rejected, (state) => {
         state.status = 'failed';
-      });
+      })
+      .addCase(deleteTransaction.fulfilled, (state, action) => {
+    state.data = state.data.filter(tx => tx.id !== action.payload);
+  });
   },
 });
-export const { addLocalTransaction, clearTransactions } = transactionSlice.actions;
+export const { addLocalTransaction, clearTransactions,removeLocalTransaction} = transactionSlice.actions;
 export default transactionSlice.reducer;

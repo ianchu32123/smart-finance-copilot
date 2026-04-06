@@ -34,6 +34,7 @@ def parse_transaction_with_llm(text: str) -> dict:
     2. JSON 必須包含兩個欄位：
        - "amount": 整數 (例如: 150)
        - "description": 字串，盡量精簡 (例如: "大潤發日常用品")
+       - "type": 字串，只能填寫 "expense" (代表支出) 或 "income" (代表收入)
     
     使用者輸入：{text}
     """
@@ -51,4 +52,5 @@ def parse_transaction_with_llm(text: str) -> dict:
         
     except Exception as e:
         print(f"🔥 LLM 解析失敗: {e}")
-        return {"amount": 0, "description": "無法解析的記帳內容"}
+        # 📍 防呆機制也要補上 type
+        return {"amount": 0, "description": "無法解析的記帳內容", "type": "expense"}

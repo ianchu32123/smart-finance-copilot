@@ -46,11 +46,12 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: smart_finance_backend
+    # 📍 1. 把環境變數獨立寫進 env_file
     env_file:
       - .env
+      
+    # 📍 2. 原本 environment 裡的 DATABASE_URL 留下，GEMINI_API_KEY 刪掉
     environment:
-      # 告訴後端，資料庫的主機名稱現在叫做 "db"
-      - GEMINI_API_KEY={GEMINI_API_KEY} #
       - DATABASE_URL=postgresql+psycopg://root:rootpassword@db:5432/smart_finance
     ports:
       - "8000:8000"

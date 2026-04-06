@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchTransactions, addTransactionViaAI, addLocalTransaction } from '../store/transactionSlice';
+import { fetchTransactions, addTransactionViaAI, addLocalTransaction, deleteTransaction, removeLocalTransaction } from '../store/transactionSlice';
 import { logout } from '../store/authSlice';
 import toast from 'react-hot-toast';
 
@@ -27,7 +27,6 @@ export function useDashboard() {
     setIsSubmitting(true);
     
     if (isGuest) {
-      // 💡 幫你修正了隨機日期沒有存進 mockTx 的小 Bug
       const randomDaysAgo = Math.floor(Math.random() * 5);
       const d = new Date();
       d.setDate(d.getDate() - randomDaysAgo);
@@ -39,6 +38,7 @@ export function useDashboard() {
         amount: Math.floor(Math.random() * 500) + 50,
         transaction_date: mockDate, 
         is_ai_parsed: true,
+        transaction_type: 'expense' // 確保訪客假資料也有 type
       };
       
       dispatch(addLocalTransaction(mockTx));
@@ -69,39 +69,65 @@ export function useDashboard() {
     toast('已登出，下次見！', { icon: '👋' });
   };
 
-  // 4. 資料運算 (總額、圓餅圖、折線圖)
-  const totalAmount = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+  // 4. 資料運算 (收支結算)
+  let totalIncome = 0;
+  let totalExpense = 0;
+  transactions.forEach(tx => {
+    if (!tx.transaction_type || tx.transaction_type === 'expense') {
+      totalExpense += tx.amount;
+    } else {
+      totalIncome += tx.amount;
+    }
+  });
+  const balance = totalIncome - totalExpense;
 
+  // 5. 刪除功能
+  const handleDelete = async (id) => {
+    if (window.confirm("確定要刪除這筆交易嗎？")) {
+      if (isGuest) {
+        dispatch(removeLocalTransaction(id));
+        toast.success("已刪除暫存紀錄");
+        return;
+      }
+      try {
+        await dispatch(deleteTransaction(id)).unwrap();
+        toast.success("刪除成功！");
+      } catch (err) {
+        toast.error("刪除失敗");
+      }
+    }
+  };
+
+  // 6. 圖表資料 (優化：只統計支出)
   const pieChartData = Object.values(
-    transactions.reduce((acc, tx) => {
-      const name = tx.description || '其他';
-      if (!acc[name]) acc[name] = { name, value: 0 };
-      acc[name].value += tx.amount;
-      return acc;
-    }, {})
+    transactions
+      .filter(tx => !tx.transaction_type || tx.transaction_type === 'expense') // 📍 過濾出支出
+      .reduce((acc, tx) => {
+        const name = tx.description || '其他';
+        if (!acc[name]) acc[name] = { name, value: 0 };
+        acc[name].value += tx.amount;
+        return acc;
+      }, {})
   ).sort((a, b) => b.value - a.value);
 
   const lineChartData = Object.values(
     transactions.reduce((acc, tx) => {
       const date = tx.transaction_date || '未知日期';
       if (!acc[date]) acc[date] = { date, amount: 0 };
-      acc[date].amount += tx.amount;
+      
+      // 折線圖也只計算每日「支出」趨勢
+      if (!tx.transaction_type || tx.transaction_type === 'expense') {
+        acc[date].amount += tx.amount;
+      }
       return acc;
     }, {})
   ).sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // 把 UI 需要用到的「狀態與方法」通通打包回傳
   return {
-    isGuest,
-    transactions,
-    status,
-    inputText,
-    setInputText,
-    isSubmitting,
-    handleSubmit,
-    handleLogout,
-    totalAmount,
-    pieChartData,
-    lineChartData
+    isGuest, transactions, status, inputText, setInputText,
+    isSubmitting, handleSubmit, handleLogout,
+    totalIncome, totalExpense, balance, handleDelete,
+    pieChartData, lineChartData
   };
-}
+} // 📍 剛剛就是遺漏了這個至關重要的大括號！

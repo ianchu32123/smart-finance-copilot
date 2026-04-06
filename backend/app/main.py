@@ -111,7 +111,8 @@ def create_transaction_via_ai(payload: schemas.TransactionAIText, db: Session = 
         description=parsed_data["description"],
         transaction_date=datetime.utcnow().date(), # 📍 補上這行！給它當天的日期
         is_ai_parsed=True,
-        is_anomaly=is_anomaly
+        is_anomaly=is_anomaly,
+        transaction_type=parsed_data.get("type", "expense") # 📍 補上這行
     )
     db.add(new_tx)
     db.commit()
@@ -180,3 +181,14 @@ def login_user(user: schemas.UserLogin, db: Session = Depends(get_db)):
     # 3. 登入成功，發放 JWT 通行證
     access_token = create_access_token(data={"sub": str(db_user.id)})
     return {"access_token": access_token, "token_type": "bearer", "user_id": str(db_user.id)}
+
+
+# 🗑️ 刪除交易紀錄 API
+@app.delete("/api/transactions/{transaction_id}")
+def delete_transaction(transaction_id: str, db: Session = Depends(get_db)):
+    tx = db.query(models.Transaction).filter(models.Transaction.id == transaction_id).first()
+    if not tx:
+        raise HTTPException(status_code=404, detail="找不到此筆交易")
+    db.delete(tx)
+    db.commit()
+    return {"message": "刪除成功"}

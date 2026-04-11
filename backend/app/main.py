@@ -112,6 +112,7 @@ def create_transaction_via_ai(payload: schemas.TransactionAIText, db: Session = 
         transaction_date=datetime.utcnow().date(), # 📍 補上這行！給它當天的日期
         is_ai_parsed=True,
         is_anomaly=is_anomaly,
+        category_name=parsed_data.get("category", "其他"),
         transaction_type=parsed_data.get("type", "expense") # 📍 補上這行
     )
     db.add(new_tx)

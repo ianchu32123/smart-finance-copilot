@@ -1,4 +1,4 @@
-import { Send, LogOut, Trash2 } from 'lucide-react'; // 📍 確保引入了垃圾桶圖示
+import { Send, LogOut, Trash2,Target } from 'lucide-react'; // 📍 確保引入了垃圾桶圖示
 import { useDashboard } from '../hooks/useDashboard';
 import { TrendLineChart, ExpensePieChart } from '../components/DashboardCharts';
 
@@ -8,7 +8,7 @@ export default function Dashboard() {
     isGuest, transactions, status, inputText, setInputText,
     isSubmitting, handleSubmit, handleLogout,
     totalIncome, totalExpense, balance, handleDelete, // 📍 就是這裡原本漏掉了 balance
-    pieChartData, lineChartData
+    pieChartData, lineChartData,budget, handleEditBudget, budgetPercent, progressColor
   } = useDashboard();
 
   return (
@@ -42,6 +42,38 @@ export default function Dashboard() {
           {isSubmitting ? <span className="animate-spin text-xl">⏳</span> : <Send size={20} />}
         </button>
       </form>
+      {/* 🌟 全新升級：預算水位進度條 */}
+   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 mb-8 relative overflow-hidden">
+     <div className="flex justify-between items-end mb-2">
+       <div>
+         <h3 className="text-slate-500 font-medium flex items-center gap-2">
+           <Target size={18} className="text-blue-500"/> 本月預算水位
+         </h3>
+         <p className="text-2xl font-bold text-slate-800 mt-1">
+           $ {totalExpense.toLocaleString()} <span className="text-sm text-slate-400 font-normal">/ {budget.toLocaleString()}</span>
+         </p>
+       </div>
+       <button onClick={handleEditBudget} className="text-sm text-blue-600 hover:bg-blue-50 px-3 py-1 rounded-lg transition-colors">
+         ✏️ 設定預算
+       </button>
+     </div>
+
+     {/* 進度條外框 */}
+     <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden">
+       {/* 進度條本體 (加上動態寬度與動態顏色) */}
+       <div 
+         className={`h-full rounded-full transition-all duration-1000 ease-out ${progressColor}`}
+         style={{ width: `${budgetPercent}%` }}
+       ></div>
+     </div>
+
+     {/* 警告提示文字 */}
+     {totalExpense >= budget ? (
+       <p className="text-rose-500 text-sm mt-2 font-medium animate-pulse">🚨 警告：已超出本月預算！</p>
+     ) : totalExpense >= budget * 0.8 ? (
+       <p className="text-amber-500 text-sm mt-2 font-medium">⚠️ 注意：花費已達預算 80%，請節制！</p>
+     ) : null}
+   </div>
       
       {/* 🌟 全新升級：三合一收支數據卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

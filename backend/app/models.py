@@ -29,7 +29,7 @@ class Category(Base):
     name = Column(String(50), unique=True, nullable=False)
     type = Column(String(20), nullable=False)  # 'income' 或 'expense'
 
-    transactions = relationship("Transaction", back_populates="category")
+    transactions = relationship("Transaction", back_populates="category_ref")
 
 
 class Transaction(Base):
@@ -37,9 +37,11 @@ class Transaction(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id', ondelete="CASCADE"), nullable=False)
+    
+    # 📍 1. 資料表關聯用的 ID
     category_id = Column(Integer, ForeignKey('categories.id'), nullable=True)
+    
     is_anomaly = Column(Boolean, default=False)
-    # 面試亮點：使用 Numeric(10, 2) 確保財務數據的精度，避免 Float 的浮點數誤差
     amount = Column(Numeric(10, 2), nullable=False)
     transaction_date = Column(Date, nullable=False)
     description = Column(String(255))
@@ -47,18 +49,18 @@ class Transaction(Base):
     is_ai_parsed = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     transaction_type = Column(String, nullable=False, server_default="expense")
+    
+    # 📍 2. 給 AI 專用的字串分類 (把原本多餘的 category 刪除，只留這個)
+    category_name = Column(String, server_default="其他")
 
-    # 建立關聯
+    # 📍 3. 建立關聯 (請確認 category_name 的 relationship 已經被刪掉了！)
+    category_ref = relationship("Category", back_populates="transactions")
     user = relationship("User", back_populates="transactions")
-    category = relationship("Category", back_populates="transactions")
-    anomaly = relationship("Anomaly", back_populates="transaction", uselist=False) # 一對一關聯
+    anomaly = relationship("Anomaly", back_populates="transaction", uselist=False)
 
-    # 面試亮點：複合索引 (Composite Index)
-    # 針對最常查詢的「某個使用者在特定時間段的花費」進行效能優化
     __table_args__ = (
         Index('ix_transactions_user_date', 'user_id', 'transaction_date'),
     )
-
 
 class Anomaly(Base):
     __tablename__ = 'anomalies'

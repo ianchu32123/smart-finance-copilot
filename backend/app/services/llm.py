@@ -28,13 +28,12 @@ def parse_transaction_with_llm(text: str) -> dict:
     model = genai.GenerativeModel(target_model_name)
     
     prompt = f"""
-    你是一個專業的理財助手。請從以下使用者輸入的文字中，提取出「花費金額」與「消費項目」。
-    請務必嚴格遵守以下規則：
-    1. 只能回傳乾淨的 JSON 格式，絕對不要包含任何 Markdown 標記 (例如 ```json) 或其他說明文字。
-    2. JSON 必須包含兩個欄位：
-       - "amount": 整數 (例如: 150)
-       - "description": 字串，盡量精簡 (例如: "大潤發日常用品")
-       - "type": 字串，只能填寫 "expense" (代表支出) 或 "income" (代表收入)
+    你是一個專業的理財助手。請從以下使用者輸入的文字中，提取出「金額」、「項目」、「收支類型」與「分類」。
+    請嚴格遵守以下規則，只能回傳 JSON 格式：
+    1. "amount": 整數
+    2. "description": 字串，盡量精簡
+    3. "type": "expense" (支出) 或 "income" (收入)
+    4. "category": 字串。請務必從以下清單挑選最適合的一個：「餐飲」、「交通」、「娛樂」、「學習」、「購物」、「居住」、「醫療」、「其他」。若 type 為 income，請固定填寫「收入」。
     
     使用者輸入：{text}
     """
@@ -53,4 +52,4 @@ def parse_transaction_with_llm(text: str) -> dict:
     except Exception as e:
         print(f"🔥 LLM 解析失敗: {e}")
         # 📍 防呆機制也要補上 type
-        return {"amount": 0, "description": "無法解析的記帳內容", "type": "expense"}
+        return {"amount": 0, "description": "無法解析的記帳內容", "type": "expense","category": "其他"}

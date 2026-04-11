@@ -32,6 +32,7 @@ class TransactionResponse(BaseModel):
     transaction_date: date
     is_anomaly: bool = False
     transaction_type: str = "expense"
+    category_name: str = "其他"  # 📍 新增這行
 
     class Config:
         from_attributes = True

@@ -97,15 +97,36 @@ export function useDashboard() {
       }
     }
   };
+  // 🌟 1. 新增：預算狀態 (從 localStorage 讀取，預設 10000)
+  const [budget, setBudget] = useState(() => {
+    const saved = localStorage.getItem(`budget_${userId}`);
+    return saved ? Number(saved) : 10000;
+  });
+
+  // 🌟 2. 新增：修改預算的函數
+  const handleEditBudget = () => {
+    const newBudget = window.prompt("請輸入本月總預算：", budget);
+    if (newBudget && !isNaN(newBudget) && Number(newBudget) > 0) {
+      setBudget(Number(newBudget));
+      localStorage.setItem(`budget_${userId}`, newBudget);
+      toast.success("預算更新成功！");
+    }
+  };
+  // 🌟 3. 新增：計算預算進度百分比與顏色
+  const budgetPercent = budget > 0 ? Math.min((totalExpense / budget) * 100, 100) : 0;
+  let progressColor = 'bg-emerald-500';
+  if (totalExpense >= budget) progressColor = 'bg-rose-500'; // 超過 100% 變紅
+  else if (totalExpense >= budget * 0.8) progressColor = 'bg-amber-500'; // 超過 80% 變橘
 
   // 6. 圖表資料 (優化：只統計支出)
+  // 🌟 4. 修改：圓餅圖改成用 category 分類，而不是 description！
   const pieChartData = Object.values(
     transactions
-      .filter(tx => !tx.transaction_type || tx.transaction_type === 'expense') // 📍 過濾出支出
+      .filter(tx => !tx.transaction_type || tx.transaction_type === 'expense')
       .reduce((acc, tx) => {
-        const name = tx.description || '其他';
-        if (!acc[name]) acc[name] = { name, value: 0 };
-        acc[name].value += tx.amount;
+        const categoryName = tx.category_name || '其他'; // 📍 改用 tx.category
+        if (!acc[categoryName]) acc[categoryName] = { name: categoryName, value: 0 };
+        acc[categoryName].value += tx.amount;
         return acc;
       }, {})
   ).sort((a, b) => b.value - a.value);
@@ -128,6 +149,6 @@ export function useDashboard() {
     isGuest, transactions, status, inputText, setInputText,
     isSubmitting, handleSubmit, handleLogout,
     totalIncome, totalExpense, balance, handleDelete,
-    pieChartData, lineChartData
+    pieChartData, lineChartData,budget, handleEditBudget, budgetPercent, progressColor
   };
 } // 📍 剛剛就是遺漏了這個至關重要的大括號！

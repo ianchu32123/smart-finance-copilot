@@ -1,6 +1,7 @@
 databases:
   - name: smart-finance-db
     plan: free
+    region: singapore
     databaseName: smart_finance
     user: smart_finance
 

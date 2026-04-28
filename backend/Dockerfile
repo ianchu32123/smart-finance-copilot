@@ -10,8 +10,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 複製所有後端程式碼
 COPY . .
 
-# 暴露 8000 Port
+# 暴露 Port (Render 會以 $PORT 注入；本地預設 8000)
 EXPOSE 8000
 
-# 啟動 FastAPI 伺服器 (注意這裡要把 host 設為 0.0.0.0 才能對外開放)
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 用 shell 形式 CMD 才能展開 ${PORT}（Render 會把 web service 的 port 塞進來）
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

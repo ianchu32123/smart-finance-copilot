@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { api } from '../api';
 import { loginSuccess, guestLogin } from '../store/authSlice';
 import toast from 'react-hot-toast';
 
@@ -24,9 +24,9 @@ export default function Login() {
     if (isLoginMode) {
       // 🟢 處理登入邏輯
       // 🟢 處理登入邏輯 (改回 FastAPI 預期的 JSON 格式！)
-      const loginPromise = axios.post('http://127.0.0.1:8000/api/users/login', { 
-        email, 
-        password 
+      const loginPromise = api.post('/api/users/login', {
+        email,
+        password
       });
 
       toast.promise(loginPromise, {
@@ -47,10 +47,10 @@ export default function Login() {
 
     } else {
       // 🔵 處理註冊邏輯
-      const registerPromise = axios.post('http://127.0.0.1:8000/api/users/register', { 
-        username, 
-        email, 
-        password 
+      const registerPromise = api.post('/api/users/register', {
+        username,
+        email,
+        password
       });
 
       toast.promise(registerPromise, {

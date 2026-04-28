@@ -6,9 +6,20 @@ from sqlalchemy.orm import  declarative_base
 
 # 如果有設定環境變數就用環境變數(Docker用)，沒有的話就用本機的預設值
 SQLALCHEMY_DATABASE_URL = os.getenv(
-    "DATABASE_URL", 
+    "DATABASE_URL",
     "postgresql+psycopg://root:rootpassword@db:5432/smart_finance"
 )
+
+# Render 等平台給的 DATABASE_URL 開頭是 "postgres://" 或 "postgresql://"，
+# 但本專案用 psycopg v3，所以需要正規化成 "postgresql+psycopg://"。
+if SQLALCHEMY_DATABASE_URL.startswith("postgres://"):
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(
+        "postgres://", "postgresql+psycopg://", 1
+    )
+elif SQLALCHEMY_DATABASE_URL.startswith("postgresql://") and "+psycopg" not in SQLALCHEMY_DATABASE_URL.split("://", 1)[0]:
+    SQLALCHEMY_DATABASE_URL = SQLALCHEMY_DATABASE_URL.replace(
+        "postgresql://", "postgresql+psycopg://", 1
+    )
 
 #engine = create_engine(SQLALCHEMY_DATABASE_URL)
 

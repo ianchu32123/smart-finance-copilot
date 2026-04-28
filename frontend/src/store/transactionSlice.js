@@ -1,11 +1,11 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import { api } from '../api';
 
 // 定義非同步的 API 請求
 export const fetchTransactions = createAsyncThunk(
   'transactions/fetch',
   async (userId) => {
-    const response = await axios.get(`http://127.0.0.1:8000/api/transactions/${userId}`);
+    const response = await api.get(`/api/transactions/${userId}`);
     return response.data;
   }
 );
@@ -13,7 +13,7 @@ export const fetchTransactions = createAsyncThunk(
 export const deleteTransaction = createAsyncThunk(
   'transactions/delete',
   async (transactionId) => {
-    await axios.delete(`http://127.0.0.1:8000/api/transactions/${transactionId}`);
+    await api.delete(`/api/transactions/${transactionId}`);
     return transactionId; // 回傳 ID 讓 reducer 知道要刪掉哪筆
   }
 );
@@ -25,7 +25,7 @@ export const addTransactionViaAI = createAsyncThunk(
   'transactions/addViaAI',
   async (payload, { dispatch }) => {
     // 1. 打 API 將文字送給後端
-    const response = await axios.post('http://127.0.0.1:8000/api/transactions/ai', payload);
+    const response = await api.post('/api/transactions/ai', payload);
     
     // 2. 寫入成功後，立刻重新觸發 fetchTransactions 撈取最新資料！
     dispatch(fetchTransactions(payload.user_id));

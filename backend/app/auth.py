@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 from passlib.context import CryptContext
 import jwt
@@ -5,8 +6,8 @@ import jwt
 # 密碼加密設定 (使用 bcrypt 演算法)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT 設定 (實務上 SECRET_KEY 應該放在 .env 裡，這邊先寫死方便測試)
-SECRET_KEY = "super-secret-smart-finance-key"
+# JWT 設定：SECRET_KEY 一律從環境變數讀取，本地開發時請放在 .env
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-secret-change-me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 通行證有效期限：1天
 

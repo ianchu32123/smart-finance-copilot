@@ -37,7 +37,7 @@ class TransactionResponse(BaseModel):
     class Config:
         from_attributes = True
 
-# 📍 請在檔案找個合適的地方貼上這些類別
+
 class UserCreate(BaseModel):
     username: str
     email: str

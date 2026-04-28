@@ -1,0 +1,45 @@
+databases:
+  - name: smart-finance-db
+    plan: free
+    databaseName: smart_finance
+    user: smart_finance
+
+services:
+  # 後端 FastAPI（Docker）
+  - type: web
+    name: smart-finance-backend
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smart-finance-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+
+  # 前端 React（Static Site）
+  - type: web
+    name: smart-finance-frontend
+    runtime: static
+    region: singapore
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

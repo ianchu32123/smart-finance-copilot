@@ -32,7 +32,6 @@ services:
   - type: web
     name: smart-finance-frontend
     runtime: static
-    region: singapore
     rootDir: frontend
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
